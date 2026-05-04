@@ -5,6 +5,8 @@ import { subjects } from './subject.schema.js';
 import { teachers } from './teacher.schema.js';
 import { rooms } from './room.schema.js';
 import { timeSlots } from './timeSlot.schema.js';
+import { users } from './user.schema.js';
+import { routineStatusEnum } from './enums.js';
 
 export const routines = pgTable(
   'routines',
@@ -32,6 +34,10 @@ export const routines = pgTable(
     effectiveUntil: timestamp('effective_until', { withTimezone: true }),
     notes: text('notes'),
     isActive: boolean('is_active').notNull().default(true),
+    isLocked: boolean('is_locked').notNull().default(false),
+    isManual: boolean('is_manual').notNull().default(false),
+    status: routineStatusEnum('status').notNull().default('DRAFT'),
+    updatedBy: uuid('updated_by').references(() => users.id, { onDelete: 'set null' }),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -41,6 +47,9 @@ export const routines = pgTable(
     teacherIdx: index('routines_teacher_id_idx').on(table.teacherId),
     roomIdx: index('routines_room_id_idx').on(table.roomId),
     slotIdx: index('routines_slot_id_idx').on(table.timeSlotId),
+    lockedIdx: index('routines_is_locked_idx').on(table.isLocked),
+    manualIdx: index('routines_is_manual_idx').on(table.isManual),
+    statusIdx: index('routines_status_idx').on(table.status),
     
     uniqueTeacherSlot: unique('routines_teacher_slot_unique').on(table.teacherId, table.timeSlotId),
     uniqueRoomSlot: unique('routines_room_slot_unique').on(table.roomId, table.timeSlotId),
@@ -68,6 +77,10 @@ export const routinesRelations = relations(routines, ({ one, many }) => ({
   timeSlot: one(timeSlots, {
     fields: [routines.timeSlotId],
     references: [timeSlots.id],
+  }),
+  updatedByUser: one(users, {
+    fields: [routines.updatedBy],
+    references: [users.id],
   }),
   attendanceSessions: many('attendance_sessions'),
 }));

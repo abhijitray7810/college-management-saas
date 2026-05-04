@@ -28,3 +28,12 @@ export const attendanceStatusEnum = pgEnum('attendance_status', [
   'LATE',
   'EXCUSED',
 ]);
+
+export const routineStatusEnum = pgEnum('routine_status', [
+  'DRAFT',
+  'PENDING',
+  'APPROVED',
+  'ACTIVE',
+  'REJECTED',
+  'ARCHIVED',
+]);

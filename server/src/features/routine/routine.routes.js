@@ -40,6 +40,68 @@ router.get(
   routineController.validateConstraints
 );
 
+// Approval Workflow endpoints (ADMIN only)
+router.post(
+  '/submit/:semesterId',
+  authorizeRoles(ROLES.ADMIN),
+  routineController.submitForApproval
+);
+
+router.post(
+  '/approve/:semesterId',
+  authorizeRoles(ROLES.ADMIN),
+  routineController.approveRoutine
+);
+
+router.post(
+  '/reject/:semesterId',
+  authorizeRoles(ROLES.ADMIN),
+  routineController.rejectRoutine
+);
+
+router.post(
+  '/activate/:semesterId',
+  authorizeRoles(ROLES.ADMIN),
+  routineController.activateRoutine
+);
+
+router.get(
+  '/pending',
+  authorizeRoles(ROLES.ADMIN),
+  routineController.getPendingRoutines
+);
+
+// Manual Override endpoints (ADMIN only)
+router.patch(
+  '/update/:id',
+  authorizeRoles(ROLES.ADMIN),
+  routineController.updateRoutine
+);
+
+router.post(
+  '/swap',
+  authorizeRoles(ROLES.ADMIN),
+  routineController.swapRoutines
+);
+
+router.patch(
+  '/lock/:id',
+  authorizeRoles(ROLES.ADMIN),
+  routineController.lockRoutine
+);
+
+router.post(
+  '/lock/bulk',
+  authorizeRoles(ROLES.ADMIN),
+  routineController.bulkLockRoutines
+);
+
+router.get(
+  '/detail/:id',
+  authorizeRoles(ROLES.ADMIN, ROLES.TEACHER),
+  routineController.getRoutineById
+);
+
 // View endpoints (ADMIN, TEACHER, STUDENT)
 router.get(
   '/:semesterId',

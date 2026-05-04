@@ -164,4 +164,151 @@ export const routineRepository = {
       .returning();
     return result;
   },
+
+  async getRoutineById(routineId) {
+    const result = await db.query.routines.findFirst({
+      where: eq(routines.id, routineId),
+      with: {
+        subject: true,
+        teacher: {
+          with: {
+            user: {
+              columns: { name: true },
+            },
+          },
+        },
+        room: true,
+        timeSlot: true,
+        semester: true,
+      },
+    });
+    return result;
+  },
+
+  async updateRoutine(routineId, data) {
+    const updateData = {
+      ...(data.teacherId && { teacherId: data.teacherId }),
+      ...(data.roomId && { roomId: data.roomId }),
+      ...(data.timeSlotId && { timeSlotId: data.timeSlotId }),
+      ...(data.notes && { notes: data.notes }),
+      isManual: true,
+      updatedBy: data.updatedBy,
+      updatedAt: new Date(),
+    };
+
+    const [result] = await db
+      .update(routines)
+      .set(updateData)
+      .where(eq(routines.id, routineId))
+      .returning();
+    return result;
+  },
+
+  async swapRoutines(routineId1, routineId2) {
+    return await db.transaction(async (tx) => {
+      // Get both routines
+      const routine1 = await tx.query.routines.findFirst({
+        where: eq(routines.id, routineId1),
+      });
+      const routine2 = await tx.query.routines.findFirst({
+        where: eq(routines.id, routineId2),
+      });
+
+      if (!routine1 || !routine2) {
+        throw new Error('One or both routines not found');
+      }
+
+      // Swap timeSlotId, roomId, teacherId
+      await tx
+        .update(routines)
+        .set({
+          timeSlotId: routine2.timeSlotId,
+          roomId: routine2.roomId,
+          teacherId: routine2.teacherId,
+          isManual: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(routines.id, routineId1));
+
+      await tx
+        .update(routines)
+        .set({
+          timeSlotId: routine1.timeSlotId,
+          roomId: routine1.roomId,
+          teacherId: routine1.teacherId,
+          isManual: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(routines.id, routineId2));
+
+      return { routineId1, routineId2, swapped: true };
+    });
+  },
+
+  async lockRoutine(routineId, isLocked, updatedBy) {
+    const [result] = await db
+      .update(routines)
+      .set({
+        isLocked,
+        updatedBy,
+        updatedAt: new Date(),
+      })
+      .where(eq(routines.id, routineId))
+      .returning();
+    return result;
+  },
+
+  async bulkLockRoutines(semesterId, isLocked, updatedBy) {
+    const result = await db
+      .update(routines)
+      .set({
+        isLocked,
+        updatedBy,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(routines.semesterId, semesterId), eq(routines.isActive, true)))
+      .returning();
+    return result;
+  },
+
+  async getRoutinesByStatus(status) {
+    const results = await db.query.routines.findMany({
+      where: eq(routines.status, status),
+      with: {
+        subject: true,
+        teacher: {
+          with: {
+            user: {
+              columns: { name: true },
+            },
+          },
+        },
+        room: true,
+        timeSlot: true,
+        semester: {
+          with: {
+            course: true,
+          },
+        },
+      },
+    });
+    return results;
+  },
+
+  async updateRoutineStatus(semesterId, status, updatedBy) {
+    const result = await db
+      .update(routines)
+      .set({
+        status,
+        updatedBy,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(routines.semesterId, semesterId), eq(routines.isActive, true)))
+      .returning();
+    return result;
+  },
+
+  async getPendingRoutines() {
+    return this.getRoutinesByStatus('PENDING');
+  },
 };

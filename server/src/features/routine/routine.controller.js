@@ -3,6 +3,11 @@ import {
   validateGenerateRoutine,
   validateGetRoutine,
   validateDeleteRoutine,
+  validateUpdateRoutine,
+  validateSwapRoutines,
+  validateLockRoutine,
+  validateBulkLock,
+  validateRoutineId,
 } from './routine.validation.js';
 import { AppError } from '../../shared/middleware/error.middleware.js';
 
@@ -191,6 +196,158 @@ export const routineController = {
           groupedByDay: result.data.groupedByDay,
         },
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ============== MANUAL OVERRIDE CONTROLLERS ==============
+
+  async updateRoutine(req, res, next) {
+    try {
+      const validatedData = validateUpdateRoutine({
+        routineId: req.params.id,
+        ...req.body,
+      });
+      const updatedBy = req.user.id;
+
+      const result = await routineService.updateRoutine(
+        validatedData.routineId,
+        validatedData,
+        updatedBy
+      );
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async swapRoutines(req, res, next) {
+    try {
+      const validatedData = validateSwapRoutines(req.body);
+      const updatedBy = req.user.id;
+
+      const result = await routineService.swapRoutines(
+        validatedData.routineId1,
+        validatedData.routineId2,
+        updatedBy
+      );
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async lockRoutine(req, res, next) {
+    try {
+      const validatedData = validateLockRoutine({
+        routineId: req.params.id,
+        isLocked: req.body.isLocked,
+      });
+      const updatedBy = req.user.id;
+
+      const result = await routineService.lockRoutine(
+        validatedData.routineId,
+        validatedData.isLocked,
+        updatedBy
+      );
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async bulkLockRoutines(req, res, next) {
+    try {
+      const validatedData = validateBulkLock(req.body);
+      const updatedBy = req.user.id;
+
+      const result = await routineService.bulkLockRoutines(
+        validatedData.semesterId,
+        validatedData.isLocked,
+        updatedBy
+      );
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getRoutineById(req, res, next) {
+    try {
+      const { routineId } = validateRoutineId({ routineId: req.params.id });
+      const result = await routineService.getRoutineById(routineId);
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ============== APPROVAL WORKFLOW CONTROLLERS ==============
+
+  async submitForApproval(req, res, next) {
+    try {
+      const { semesterId } = validateGetRoutine(req.params);
+      const updatedBy = req.user.id;
+
+      const result = await routineService.submitForApproval(semesterId, updatedBy);
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async approveRoutine(req, res, next) {
+    try {
+      const { semesterId } = validateGetRoutine(req.params);
+      const updatedBy = req.user.id;
+
+      const result = await routineService.approveRoutine(semesterId, updatedBy);
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async rejectRoutine(req, res, next) {
+    try {
+      const { semesterId } = validateGetRoutine(req.params);
+      const { reason } = req.body;
+      const updatedBy = req.user.id;
+
+      const result = await routineService.rejectRoutine(semesterId, reason, updatedBy);
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async activateRoutine(req, res, next) {
+    try {
+      const { semesterId } = validateGetRoutine(req.params);
+      const updatedBy = req.user.id;
+
+      const result = await routineService.activateRoutine(semesterId, updatedBy);
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getPendingRoutines(req, res, next) {
+    try {
+      const result = await routineService.getPendingRoutines();
+
+      res.status(200).json(result);
     } catch (error) {
       next(error);
     }
