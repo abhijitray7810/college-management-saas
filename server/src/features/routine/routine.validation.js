@@ -10,8 +10,22 @@ export const generateRoutineSchema = z.object({
   maxIterations: z.number().int().min(100).max(100000).optional().default(10000),
 });
 
+// NEW: Section-based routine generation
+export const generateSectionRoutineSchema = z.object({
+  sectionId: uuidSchema,
+  academicYear: z.string().min(4).max(20).optional(),
+  preferSpreadAcrossDays: z.boolean().optional().default(true),
+  prioritizeLabs: z.boolean().optional().default(true),
+  maxIterations: z.number().int().min(100).max(100000).optional().default(10000),
+  saveToDatabase: z.boolean().optional().default(true),
+});
+
 export const getRoutineSchema = z.object({
   semesterId: uuidSchema,
+});
+
+export const getSectionRoutineSchema = z.object({
+  sectionId: uuidSchema,
 });
 
 export const deleteRoutineSchema = z.object({
@@ -19,7 +33,9 @@ export const deleteRoutineSchema = z.object({
 });
 
 export const validateGenerateRoutine = (data) => generateRoutineSchema.parse(data);
+export const validateGenerateSectionRoutine = (data) => generateSectionRoutineSchema.parse(data);
 export const validateGetRoutine = (data) => getRoutineSchema.parse(data);
+export const validateGetSectionRoutine = (data) => getSectionRoutineSchema.parse(data);
 export const validateDeleteRoutine = (data) => deleteRoutineSchema.parse(data);
 
 // Manual Override Schemas

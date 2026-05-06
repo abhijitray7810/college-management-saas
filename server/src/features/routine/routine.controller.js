@@ -1,7 +1,9 @@
 import { routineService } from './routine.service.js';
 import {
   validateGenerateRoutine,
+  validateGenerateSectionRoutine,
   validateGetRoutine,
+  validateGetSectionRoutine,
   validateDeleteRoutine,
   validateUpdateRoutine,
   validateSwapRoutines,
@@ -10,8 +12,18 @@ import {
   validateRoutineId,
 } from './routine.validation.js';
 import { AppError } from '../../shared/middleware/error.middleware.js';
+import { routineGenerator } from './routine.generator.js';
 
 export const routineController = {
+  async getRoutineBySection(req, res, next) {
+    try {
+      const { sectionId } = validateGetSectionRoutine(req.params);
+      const result = await routineService.getRoutineBySection(sectionId);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
   async generateRoutine(req, res, next) {
     try {
       const validatedData = validateGenerateRoutine(req.body);
@@ -33,6 +45,74 @@ export const routineController = {
         success: true,
         message: result.message,
         data: result.data,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async submitForApprovalSection(req, res, next) {
+    try {
+      const { sectionId } = validateGetSectionRoutine(req.params);
+      const updatedBy = req.user.id;
+
+      const result = await routineService.submitForApprovalSection(sectionId, updatedBy);
+
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * NEW: Generate routine for a specific section
+   * Uses section-based hierarchical data loading
+   */
+  async generateSectionRoutine(req, res, next) {
+    try {
+      const validatedData = validateGenerateSectionRoutine(req.body);
+      
+      // Prevent timeout for long-running generation
+      req.setTimeout(300000); // 5 minutes
+      
+      // Use the new section-based generator
+      await routineGenerator.initialize(validatedData.sectionId, {
+        academicYear: validatedData.academicYear,
+        preferSpreadAcrossDays: validatedData.preferSpreadAcrossDays,
+        prioritizeLabs: validatedData.prioritizeLabs,
+        maxIterations: validatedData.maxIterations,
+      });
+
+      const generationResult = await routineGenerator.generate();
+
+      if (!generationResult.success) {
+        return res.status(422).json({
+          success: false,
+          sectionId: validatedData.sectionId,
+          message: generationResult.message,
+          totalSessions: generationResult.totalSessions,
+          assignedSessions: generationResult.assignedSessions,
+          iterations: generationResult.iterations,
+        });
+      }
+
+      // Save to database if requested
+      let savedRoutines = [];
+      if (validatedData.saveToDatabase) {
+        savedRoutines = await routineGenerator.saveToDatabase(req.user.id);
+      }
+
+      res.status(201).json({
+        success: true,
+        message: 'Section routine generated successfully',
+        sectionId: validatedData.sectionId,
+        data: {
+          totalSessions: generationResult.totalSessions,
+          assignedSessions: generationResult.assignedSessions,
+          iterations: generationResult.iterations,
+          assignments: generationResult.assignments,
+          savedRoutines: validatedData.saveToDatabase ? savedRoutines.length : 0,
+        },
       });
     } catch (error) {
       next(error);

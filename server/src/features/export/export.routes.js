@@ -15,6 +15,13 @@ router.get(
   exportController.exportRoutinePDF
 );
 
+// NEW: Export routine timetable by section (ADMIN, TEACHER)
+router.get(
+  '/routine/section/:sectionId',
+  authorizeRoles(ROLES.ADMIN, ROLES.TEACHER),
+  exportController.exportRoutinePDFBySection
+);
+
 // Export student attendance (ADMIN, TEACHER, STUDENT - own only)
 router.get(
   '/attendance/student/:studentId',

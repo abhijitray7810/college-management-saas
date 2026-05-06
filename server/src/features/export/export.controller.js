@@ -20,6 +20,24 @@ export const exportController = {
     }
   },
 
+  async exportRoutinePDFBySection(req, res, next) {
+    try {
+      const { sectionId } = req.params;
+
+      if (!sectionId) {
+        throw new AppError('Section ID is required', 400);
+      }
+
+      const result = await exportService.generateRoutinePDFBySection(sectionId);
+
+      res.setHeader('Content-Type', result.data.contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${result.data.filename}"`);
+      res.send(result.data.buffer);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async exportStudentAttendancePDF(req, res, next) {
     try {
       const { studentId } = req.params;

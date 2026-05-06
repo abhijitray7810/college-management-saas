@@ -96,6 +96,30 @@ export const routineRepository = {
     return results;
   },
 
+  async getExistingRoutinesBySection(sectionId) {
+    const results = await db.query.routines.findMany({
+      where: and(eq(routines.sectionId, sectionId), eq(routines.isActive, true)),
+      with: {
+        subject: true,
+        teacher: {
+          with: {
+            user: {
+              columns: {
+                name: true,
+              },
+            },
+          },
+        },
+        room: true,
+        timeSlot: true,
+        section: true,
+        batch: true,
+        department: true,
+      },
+    });
+    return results;
+  },
+
   async getExistingRoutinesByTimeSlot(timeSlotId) {
     const results = await db.query.routines.findMany({
       where: and(

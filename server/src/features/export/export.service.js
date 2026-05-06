@@ -44,6 +44,46 @@ export const exportService = {
     };
   },
 
+  async generateRoutinePDFBySection(sectionId) {
+    const routines = await routineRepository.getExistingRoutinesBySection(sectionId);
+    if (routines.length === 0) {
+      throw new AppError('No routines found for this section', 404);
+    }
+
+    // Group routines by day
+    const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+    const timeSlots = [...new Set(routines.map(r => `${r.timeSlot.startTime}-${r.timeSlot.endTime}`))].sort();
+
+    const schedule = {};
+    days.forEach(day => {
+      schedule[day] = {};
+      timeSlots.forEach(slot => {
+        schedule[day][slot] = routines.find(r =>
+          r.timeSlot.day === day &&
+          `${r.timeSlot.startTime}-${r.timeSlot.endTime}` === slot
+        );
+      });
+    });
+
+    const header = routines[0];
+    const html = this.generateRoutineHTML(schedule, days, timeSlots, {
+      name: header.section?.name,
+      academicYear: header.academicYear,
+      course: { name: header.batch?.name || '' },
+    });
+
+    const pdfBuffer = await this.htmlToPDF(html, `Routine - ${header.section?.name || 'Section'}`);
+
+    return {
+      success: true,
+      data: {
+        filename: `routine-section-${sectionId}.pdf`,
+        buffer: pdfBuffer,
+        contentType: 'application/pdf',
+      },
+    };
+  },
+
   generateRoutineHTML(schedule, days, timeSlots, semester) {
     const rows = timeSlots.map(slot => {
       const cells = days.map(day => {

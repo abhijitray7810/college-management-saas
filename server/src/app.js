@@ -17,6 +17,17 @@ import routineRoutes from './features/routine/routine.routes.js';
 import attendanceRoutes from './features/attendance/attendance.routes.js';
 import dashboardRoutes from './features/dashboard/dashboard.routes.js';
 import exportRoutes from './features/export/export.routes.js';
+import timeSlotRoutes from './features/timeSlots/timeSlot.routes.js';
+
+import teacherRoutes from './features/teachers/teacher.routes.js';
+import roomRoutes from './features/rooms/room.routes.js';
+import departmentRoutes from './features/departments/department.routes.js';
+
+// Institutional Structure Routes (New)
+import buildingRoutes from './features/buildings/building.routes.js';
+import floorRoutes from './features/floors/floor.routes.js';
+import batchRoutes from './features/batches/batch.routes.js';
+import sectionRoutes from './features/sections/section.routes.js';
 
 const app = express();
 
@@ -89,6 +100,17 @@ app.use('/api/routine', routineRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/export', exportRoutes);
+app.use('/api/time-slots', timeSlotRoutes);
+
+app.use('/api/teachers', teacherRoutes);
+app.use('/api/rooms', roomRoutes);
+app.use('/api/departments', departmentRoutes);
+
+// Institutional Structure Routes (New)
+app.use('/api/buildings', buildingRoutes);
+app.use('/api/floors', floorRoutes);
+app.use('/api/batches', batchRoutes);
+app.use('/api/sections', sectionRoutes);
 
 // 404 handler
 app.use((req, res) => {

@@ -1,4 +1,4 @@
-import { eq, and, sql, count, avg, gte, lte, desc, asc } from 'drizzle-orm';
+import { eq, and, sql, count, avg, gte, lte, desc, asc, inArray } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import {
   users,
@@ -13,6 +13,7 @@ import {
   timeSlots,
   attendanceSessions,
   attendanceRecords,
+  studentSections,
 } from '../../db/schema/index.js';
 
 export const dashboardRepository = {
@@ -29,13 +30,14 @@ export const dashboardRepository = {
             email: true,
           },
         },
-        semester: {
+        batch: {
           with: {
-            course: {
-              with: {
-                department: true,
-              },
-            },
+            department: true,
+          },
+        },
+        studentSections: {
+          with: {
+            section: true,
           },
         },
       },
@@ -84,16 +86,17 @@ export const dashboardRepository = {
   },
 
   async getStudentTodaySchedule(studentId, dayOfWeek) {
-    const student = await db.query.students.findFirst({
-      where: eq(students.id, studentId),
-      columns: { currentSemesterId: true },
+    // Get student's current section from studentSections
+    const studentSection = await db.query.studentSections.findFirst({
+      where: eq(studentSections.studentId, studentId),
+      columns: { sectionId: true },
     });
 
-    if (!student?.currentSemesterId) return [];
+    if (!studentSection?.sectionId) return [];
 
     const results = await db.query.routines.findMany({
       where: and(
-        eq(routines.semesterId, student.currentSemesterId),
+        eq(routines.sectionId, studentSection.sectionId),
         eq(routines.isActive, true)
       ),
       with: {
@@ -117,12 +120,13 @@ export const dashboardRepository = {
   },
 
   async getStudentUpcomingSchedule(studentId, currentDay, nextDays) {
-    const student = await db.query.students.findFirst({
-      where: eq(students.id, studentId),
-      columns: { currentSemesterId: true },
+    // Get student's current section from studentSections
+    const studentSection = await db.query.studentSections.findFirst({
+      where: eq(studentSections.studentId, studentId),
+      columns: { sectionId: true },
     });
 
-    if (!student?.currentSemesterId) return [];
+    if (!studentSection?.sectionId) return [];
 
     const days = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
     const currentIndex = days.indexOf(currentDay);
@@ -135,7 +139,7 @@ export const dashboardRepository = {
 
     const results = await db.query.routines.findMany({
       where: and(
-        eq(routines.semesterId, student.currentSemesterId),
+        eq(routines.sectionId, studentSection.sectionId),
         eq(routines.isActive, true)
       ),
       with: {
@@ -240,7 +244,7 @@ export const dashboardRepository = {
         routine: {
           with: {
             subject: true,
-            semester: true,
+            section: true,
           },
         },
         records: {
@@ -397,12 +401,7 @@ export const dashboardRepository = {
         attendanceSessions,
         eq(attendanceRecords.sessionId, attendanceSessions.id)
       )
-      .where(
-        gte(
-          attendanceSessions.sessionDate,
-          sql`CURRENT_DATE - INTERVAL '7 days'`
-        )
-      )
+      .where(sql`${attendanceSessions.sessionDate} >= CURRENT_DATE - INTERVAL '7 days'`)
       .groupBy(sql`DATE(${attendanceSessions.sessionDate})`)
       .orderBy(asc(sql`DATE(${attendanceSessions.sessionDate})`));
 

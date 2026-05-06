@@ -1,7 +1,9 @@
 import { routineGenerator } from './routine.generator.js';
 import { routineRepository } from './routine.repository.js';
 import { availabilityService } from '../availability/availability.service.js';
+import { eq, and } from 'drizzle-orm';
 import { db } from '../../db/index.js';
+import { routines } from '../../db/schema/index.js';
 import { AppError } from '../../shared/middleware/error.middleware.js';
 
 export const routineService = {
@@ -81,6 +83,60 @@ export const routineService = {
     };
   },
 
+  async getRoutineBySection(sectionId) {
+    const routines = await routineRepository.getExistingRoutinesBySection(sectionId);
+
+    if (!routines || routines.length === 0) {
+      return {
+        success: true,
+        data: {
+          sectionId,
+          totalSessions: 0,
+          routines: [],
+          groupedByDay: this.groupRoutinesByDay([]),
+        },
+      };
+    }
+
+    const groupedByDay = this.groupRoutinesByDay(routines);
+    const subjectIds = new Set(routines.map((r) => r.subjectId));
+    const teacherIds = new Set(routines.map((r) => r.teacherId));
+    const roomIds = new Set(routines.map((r) => r.roomId));
+
+    return {
+      success: true,
+      data: {
+        section: routines[0].section,
+        batch: routines[0].batch,
+        department: routines[0].department,
+        status: routines[0].status,
+        totalSessions: routines.length,
+        uniqueSubjects: subjectIds.size,
+        uniqueTeachers: teacherIds.size,
+        uniqueRooms: roomIds.size,
+        routines,
+        groupedByDay,
+      },
+    };
+  },
+
+  async submitForApprovalSection(sectionId, updatedBy) {
+    const existingRoutines = await routineRepository.getExistingRoutinesBySection(sectionId);
+    if (!existingRoutines || existingRoutines.length === 0) {
+      throw new AppError('No routines found for this section', 404);
+    }
+
+    await db
+      .update(routines)
+      .set({ status: 'PENDING', updatedBy, updatedAt: new Date() })
+      .where(and(eq(routines.sectionId, sectionId), eq(routines.isActive, true)));
+
+    return {
+      success: true,
+      message: 'Submitted for approval',
+      data: { sectionId, status: 'PENDING' },
+    };
+  },
   async getRoutineBySemester(semesterId) {
     const semester = await routineRepository.getSemesterById(semesterId);
     if (!semester) {

@@ -15,6 +15,20 @@ router.post(
   routineController.generateRoutine
 );
 
+// NEW: Section-based generation (ADMIN and SUPER_ADMIN)
+router.post(
+  '/generate/section',
+  authorizeRoles(ROLES.ADMIN, ROLES.SUPER_ADMIN),
+  routineController.generateSectionRoutine
+);
+
+// NEW: Section-based view
+router.get(
+  '/section/:sectionId',
+  authorizeRoles(ROLES.ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.SUPER_ADMIN),
+  routineController.getRoutineBySection
+);
+
 router.get(
   '/preview/:semesterId',
   authorizeRoles(ROLES.ADMIN),
@@ -41,6 +55,12 @@ router.get(
 );
 
 // Approval Workflow endpoints (ADMIN only)
+router.post(
+  '/submit/section/:sectionId',
+  authorizeRoles(ROLES.ADMIN),
+  routineController.submitForApprovalSection
+);
+
 router.post(
   '/submit/:semesterId',
   authorizeRoles(ROLES.ADMIN),

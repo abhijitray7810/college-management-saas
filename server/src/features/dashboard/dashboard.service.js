@@ -60,10 +60,10 @@ export const dashboardService = {
           name: student.user?.name,
           email: student.user?.email,
           enrollmentNumber: student.enrollmentNumber,
-          course: student.semester?.course?.name,
-          department: student.semester?.course?.department?.name,
-          semester: student.semester?.name,
-          academicYear: student.semester?.academicYear,
+          course: student.batch?.name,
+          department: student.batch?.department?.name,
+          section: student.studentSections?.[0]?.section?.name,
+          academicYear: student.batch?.academicYear,
         },
         attendance: {
           overallPercentage,
@@ -198,7 +198,7 @@ export const dashboardService = {
           pendingSessions: pendingAttendance.map((p) => ({
             sessionId: p.id,
             subject: p.routine?.subject?.name,
-            semester: p.routine?.semester?.name,
+            section: p.routine?.section?.name,
             date: p.sessionDate,
             topic: p.topicCovered,
           })),
