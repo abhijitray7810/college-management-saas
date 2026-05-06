@@ -1,0 +1,33 @@
+###############################################################################
+# Production overlay — apply on top of docker-compose.yml
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+###############################################################################
+
+version: "3.9"
+
+services:
+  postgres:
+    ports: []       # never expose DB port in production
+
+  server:
+    image: ${REGISTRY}/college-server:${IMAGE_TAG:-latest}
+    build: !reset null    # use pre-built image in prod
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: "1.5"
+          memory: 768M
+      restart_policy:
+        condition: on-failure
+        max_attempts: 3
+
+  client:
+    image: ${REGISTRY}/college-client:${IMAGE_TAG:-latest}
+    build: !reset null
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M

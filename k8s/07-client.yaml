@@ -1,0 +1,93 @@
+###############################################################################
+# k8s/07-client.yaml
+###############################################################################
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: college-client
+  namespace: college-mgmt
+  labels:
+    app: college-client
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: college-client
+  template:
+    metadata:
+      labels:
+        app: college-client
+    spec:
+      containers:
+        - name: college-client
+          image: ${REGISTRY}/college-client:${IMAGE_TAG}
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: false    # nginx needs port 80
+            capabilities:
+              drop: ["ALL"]
+              add: ["NET_BIND_SERVICE"]
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: college-client
+  namespace: college-mgmt
+spec:
+  selector:
+    app: college-client
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: college-client-hpa
+  namespace: college-mgmt
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: college-client
+  minReplicas: 2
+  maxReplicas: 4
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

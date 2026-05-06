@@ -1,0 +1,109 @@
+###############################################################################
+# k8s/09-network-policy.yaml
+# Deny all by default; allow only required traffic paths.
+###############################################################################
+
+# Default deny all ingress
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: college-mgmt
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+
+---
+# Allow ingress → client
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-client
+  namespace: college-mgmt
+spec:
+  podSelector:
+    matchLabels:
+      app: college-client
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 80
+
+---
+# Allow ingress → server (from ingress-nginx and from client)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-server
+  namespace: college-mgmt
+spec:
+  podSelector:
+    matchLabels:
+      app: college-server
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+        - podSelector:
+            matchLabels:
+              app: college-client
+      ports:
+        - protocol: TCP
+          port: 3000
+
+---
+# Allow server → postgres
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-server-to-postgres
+  namespace: college-mgmt
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: college-server
+        - podSelector:
+            matchLabels:
+              app: db-migrate
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+# Allow server → redis
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-server-to-redis
+  namespace: college-mgmt
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: college-server
+      ports:
+        - protocol: TCP
+          port: 6379
