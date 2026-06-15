@@ -11,7 +11,7 @@ Production-ready Node.js backend for a College Management SaaS application.
 - **JWT** - Authentication
 - **bcrypt** - Password hashing
 - **Zod** - Input validation
-
+ 
 ## Architecture
 
 Feature-based architecture following SOLID principles:
