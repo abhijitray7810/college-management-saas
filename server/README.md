@@ -1,4 +1,4 @@
-# College Management SaaS Backend  
+# College Management SaaS Backend
 
 Production-ready Node.js backend for a College Management SaaS application.  
  
