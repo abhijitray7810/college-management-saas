@@ -9,7 +9,7 @@ Production-ready Node.js backend for a College Management SaaS application.
 - **PostgreSQL (Neon)** - Database
 - **Drizzle ORM** - Database ORM  
 - **JWT** - Authentication
-- **bcrypt** - Password hashing
+- **bcrypt** - Password hashing 
 - **Zod** - Input validation
  
 ## Architecture
