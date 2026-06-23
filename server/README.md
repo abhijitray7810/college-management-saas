@@ -7,7 +7,7 @@ Production-ready Node.js backend for a College Management SaaS application.
 - **Node.js** (ES Modules)
 - **Express.js** - Web framework
 - **PostgreSQL (Neon)** - Database
-- **Drizzle ORM** - Database ORM 
+- **Drizzle ORM** - Database ORM  
 - **JWT** - Authentication
 - **bcrypt** - Password hashing
 - **Zod** - Input validation
